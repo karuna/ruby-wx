@@ -7,7 +7,7 @@ require 'stringio'
 module WX
   class TafReport
     include Groups
-    
+
     attr_accessor :raw
     attr_accessor :station
     attr_accessor :time
@@ -19,47 +19,47 @@ module WX
     attr_accessor :weather
     attr_accessor :sky
     attr_accessor :partial
-    
+
     def self.parse(raw)
       m = TafReport.new
       m.raw = raw
       groups = raw.split
-      
+
       g = groups.shift
-      
+
       if g != "TAF"
         raise ParseError, "Can't parse TAF: #{g} "
         return nil
       end
-      
+
       g = groups.shift
-      
+
       if g =~ /AMD/
         amendment = true
         g = groups.shift
-      end  
-      
+      end
+
       if g =~ /^([a-zA-Z0-9]{4})$/
         m.station = $1
         g = groups.shift
       else
         raise ParseError, "Invalid Station Identifier '#{g}'"
       end
-      
+
       if g =~ /^(\d\d)(\d\d)(\d\d)Z$/
         m.time = Time.parse(g)
         g = groups.shift
       else
         raise ParseError, "Invalid Date and Time '#{g}'"
       end
-      
+
       if g =~ /^(\d\d)(\d\d)\/(\d\d)(\d\d)$/
         m.tafTime = TAFTime.parse(g)
         g = groups.shift
       else
         raise ParseError, "Invalid Date and Time '#{g}'"
       end
-    
+
       # wind
       if g =~ /^((\d\d\d)|VRB)(\d\d\d?)(G(\d\d\d?))?(KT|KMH|MPS)$/
         if groups.first =~ /^(\d\d\d)V(\d\d\d)$/
@@ -68,7 +68,7 @@ module WX
         m.wind = Wind.new(g)
         g = groups.shift
       end
-      
+
       # visibility
       if g =~ /^\d+$/ and groups.first =~ /^M?\d+\/\d+SM$/
         m.visibility = Visibility.new(g+' '+groups.shift)
@@ -94,7 +94,7 @@ module WX
         m.weather.push PresentWeather.new(g)
         g = groups.shift
       end
-      
+
       # sky condition
       m.sky = []
       while g =~ /^(SKC|CLR)|(VV|FEW|SCT|BKN|OVC)/
@@ -107,7 +107,7 @@ module WX
       begin
         if g =~ /^FM\d\d\d\d\d\d$/
           fromGroupRaw = g
-              
+
           begin
             g = groups.shift
             if(g =~ /^FM\d\d\d\d\d\d$/ || g =~ /^TEMPO$/ || g =~ /^PROB\d\d$/)
@@ -119,14 +119,14 @@ module WX
               fromGroupRaw = fromGroupRaw + " " + g
             end
           end while true
-          
-          m.partial.push(WX::TAFReportPartial.parse(fromGroupRaw))
+
+          m.partial.push(WX::TafReportPartial.parse(fromGroupRaw))
         elsif g =~ /^TEMPO$/
           tempoGroupRaw = g
-        
+
           begin
             g = groups.shift
-          
+
             if(g =~ /^FM\d\d\d\d\d\d$/ || g =~ /^TEMPO$/ || g =~ /^PROB\d\d$/)
               groups.unshift(g)
               break
@@ -136,7 +136,7 @@ module WX
               tempoGroupRaw = tempoGroupRaw + " " + g
             end
           end while true
-          m.partial.push(WX::TAFReportPartial.parse(tempoGroupRaw))
+          m.partial.push(WX::TafReportPartial.parse(tempoGroupRaw))
         elsif g =~ /^PROB\d\d$/
           probgroupRaw = g
           begin
@@ -150,20 +150,20 @@ module WX
               probgroupRaw = probgroupRaw + " " + g
             end
           end while true
-          m.partial.push(WX::TAFReportPartial.parse(probgroupRaw))
+          m.partial.push(WX::TafReportPartial.parse(probgroupRaw))
         elsif g == nil
           break
         end
-        
+
         g = groups.shift
       end while true
-      
+
       return m
     end
   end
-  
-  class TAFReportPartial
-        include Groups
+
+  class TafReportPartial
+    include Groups
     attr_accessor :raw
     attr_accessor :fromOrTempo
     attr_accessor :wind
@@ -175,10 +175,10 @@ module WX
     attr_accessor :prob
 
     def self.parse(raw)
-      m = TAFReportPartial.new
+      m = TafReportPartial.new
       m.raw = raw
       groups = raw.split
-      
+
       g = groups.shift
 
       if g =~ /^FM(\d\d\d\d\d\d)$/
@@ -207,7 +207,7 @@ module WX
           raise ParseError, "Invalid Date and Time '#{g}'"
         end
       end
-      
+
       # wind
       if g =~ /^((\d\d\d)|VRB)(\d\d\d?)(G(\d\d\d?))?(KT|KMH|MPS)$/
         if groups.first =~ /^(\d\d\d)V(\d\d\d)$/
@@ -216,7 +216,7 @@ module WX
         m.wind = Wind.new(g)
         g = groups.shift
       end
-      
+
       # visibility
       if g =~ /^\d+$/ and groups.first =~ /^M?\d+\/\d+SM$/
         m.visibility = Visibility.new(g+' '+groups.shift)
@@ -242,7 +242,7 @@ module WX
         m.weather.push PresentWeather.new(g)
         g = groups.shift
       end
-      
+
       # sky condition
       m.sky = []
       while g =~ /^(SKC|CLR)|(VV|FEW|SCT|BKN|OVC)/
